@@ -1,3 +1,5 @@
+//TODO cambiar los console.log por log de la APP
+
 'use strict';
 
 const express = require('express');
@@ -11,7 +13,8 @@ const App = require(__dirname+'/index');
 const config = App.Config();
 const setup = require(__dirname+'/setup');
 const cluster = require('cluster');
-const numCPUs = require('os').cpus().length;
+const numCPUs = config.numCPUs || require('os').cpus().length;
+const sticky = require('sticky-session'); // SOCKET IO con cluster
 
 // Creamos app de express
 const app = express();
@@ -32,19 +35,32 @@ app.use(cookieParser());
 // Utils.setMiddleware(app);
 setup.once('success',() => {
 
-    // Multihilo
-    if (cluster.isMaster) {
+
+    const server = require('http').createServer(function(req, res) {
+        res.end('worker: ' + cluster.worker.id);
+    });
+
+    if (!sticky.listen(server, 3000)) {
+        // Master code
+
+        server.once('listening', function() {
+            console.log('server started on 3000 port');
+        });
+
+        // server.once(config.app.port, config.app.ip, () => {
+        //  console.log('API Skalia server listening on port '+config.app.port);
+        // });
+
         for (let i = 0; i < numCPUs; i++) {
             cluster.fork();
         }
 
         let maxWorkerCrashes = config.security.restart;
         cluster.on('exit', (worker, code, signal) => {
-            App.log().info(false,'worker ' + worker.process.pid + ' died');
+            console.log('worker ' + worker.process.pid + ' died');
             if (worker.suicide !== true) {
                 maxWorkerCrashes--;
                 if (maxWorkerCrashes <= 0) {
-                    // App.log().error(false,{ msg : 'Too many worker crashes -> process exit', code : 500, alert : 'system' },true);
                     console.log('Too many worker crashes -> process exit');
                 } else {
                     cluster.fork();
@@ -53,17 +69,27 @@ setup.once('success',() => {
         });
 
     } else {
-
+        // Worker code
         try {
             require(__dirname+'/routes')(app);
-            let server = require('http').createServer(app);
-            server.listen(config.app.port, config.app.ip, () => {
-                // App.log().info(false,'Skalia server listening on port '+config.app.port+', env '+app.get('env'));
-                console.log('API Skalia server listening on port '+config.app.port);
+
+            console.log(`API Skalia server worker ${cluster.worker.id} up on ${config.app.port}`);
+
+            let io = require('socket.io')(server);
+            io.on('connection', function(socket){
+                console.log(`A user connected on ${cluster.worker.id}`);
             });
 
+            /*server.listen(config.app.port, config.app.ip, () => {
+                // App.log().info(false,'Skalia server listening on port '+config.app.port+', env '+app.get('env'));
+                console.log('API Skalia server listening on port '+config.app.port);
+                let io = require('socket.io')(server);
+                io.on('connection', function(socket){
+                    console.log('a user connected');
+                });
+            });*/
+
         } catch (err) {
-            //App.log().error(false,{ msg : 'Error arrancando servidor: '+(err.stack || JSON.stringify(err)), code : 500, alert : 'system' },true);
             console.log('Error arrancando servidor: '+(err.stack || JSON.stringify(err)))
         }
     }

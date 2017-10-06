@@ -8,10 +8,9 @@ const util = require('util');
 // Cargas iniciales y dependencias
 const setup = function setup(){
     EventEmitter.call(this);
-    let $this = this;
 
     if(config.envVars){ //Carga de variables de entorno
-        for (var key in config.envVars) {
+        for (let key in config.envVars) {
             process.env[key] = config.envVars[key];
         }
     }
