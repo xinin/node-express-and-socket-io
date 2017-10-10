@@ -4,7 +4,7 @@
 module.exports = {
     env : 'dev', // dev, pre y pro
     app : {
-        port : 3000,
+        port : 8000,
         ip : '127.0.0.1',
     },
     mongo : {

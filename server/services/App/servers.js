@@ -1,126 +1,111 @@
-//TODO cambiar los console.log por log de la APP
-
-'use strict';
-
 const express = require('express');
+const cluster = require('cluster');
+const net = require('net');
+const sio = require('socket.io');
+const sio_redis = require('socket.io-redis');
+const farmhash = require('farmhash');
+
 const compression = require('compression');
 const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
-const App = require(__dirname+'/index');
-// const Utils = App.Utils();
+
+const App = require(__dirname + '/index');
 const config = App.Config();
-const setup = require(__dirname+'/setup');
-const cluster = require('cluster');
-const numCPUs = config.numCPUs || require('os').cpus().length;
-const sticky = require('sticky-session'); // SOCKET IO con cluster
+const setup = require(__dirname + '/setup');
 
-// Creamos app de express
-const app = express();
-app.use(helmet.hidePoweredBy({ setTo: 'PHP 5.2.0' }));  // hidePoweredBy to remove the X-Powered-By header
-app.use(helmet.hsts({ maxAge: 7776000000 }));           // hsts for HTTP Strict Transport Security
-app.use(helmet.ieNoOpen());                             // ieNoOpen sets X-Download-Options for IE8+
-app.use(helmet.noCache());                              // noCache to disable client-side caching
-app.use(helmet.noSniff());                              // noSniff to keep clients from sniffing the MIME type
-app.use(helmet.frameguard());                           // frameguard to prevent clickjacking
-app.use(helmet.xssFilter());                            // xssFilter adds some small XSS protections
-app.use(compression());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(methodOverride());
-app.use(cookieParser());
-// Utils.sanitize(app);
-// Utils.setMorgan(app);
-// Utils.setMiddleware(app);
-setup.once('success',() => {
+const port = config.app.port;
+const num_processes = config.numCPUs || require('os').cpus().length;
+const workers = [];
 
 
-    const server = require('http').createServer(function(req, res) {
-        res.end('worker: ' + cluster.worker.id);
+if (cluster.isMaster) {
+
+    console.log(`Skalia server started on ${config.app.port} port`);
+
+    let i;
+
+    const spawn = function (i) {
+        workers[i] = cluster.fork();
+        workers[i].on('exit', function (code, signal) {
+            console.log('respawning worker', i);
+            spawn(i);
+        });
+    };
+
+    // Spawn workers.
+    for (i = 0; i < num_processes; i++) {
+        spawn(i);
+    }
+
+    // Helper function for getting a worker index based on IP address.
+    // This is a hot path so it should be really fast. The way it works
+    // is by converting the IP address to a number by removing non numeric
+    // characters, then compressing it to the number of slots we have.
+    //
+    // Compared against "real" hashing (from the sticky-session code) and
+    // "real" IP number conversion, this function is on par in terms of
+    // worker index distribution only much faster.
+    const worker_index = function (ip, len) {
+        return farmhash.fingerprint32(ip[i]) % len; // Farmhash is the fastest and works with IPv6, too
+    };
+
+    // Create the outside facing server listening on our port.
+    const server = net.createServer({pauseOnConnect: true}, function (connection) {
+        // We received a connection and need to pass it to the appropriate
+        // worker. Get the worker for this connection's source IP and pass
+        // it the connection.
+        const worker = workers[worker_index(connection.remoteAddress, num_processes)];
+        worker.send('sticky-session:connection', connection);
+    }).listen(port);
+} else {
+    // Note we don't use a port here because the master listens on it for us.
+    const app = new express();
+    app.use(helmet.hidePoweredBy({setTo: 'PHP 5.2.0'}));  // hidePoweredBy to remove the X-Powered-By header
+    app.use(helmet.hsts({maxAge: 7776000000}));           // hsts for HTTP Strict Transport Security
+    app.use(helmet.ieNoOpen());                             // ieNoOpen sets X-Download-Options for IE8+
+    app.use(helmet.noCache());                              // noCache to disable client-side caching
+    app.use(helmet.noSniff());                              // noSniff to keep clients from sniffing the MIME type
+    app.use(helmet.frameguard());                           // frameguard to prevent clickjacking
+    app.use(helmet.xssFilter());                            // xssFilter adds some small XSS protections
+    app.use(compression());
+    app.use(bodyParser.urlencoded({extended: false}));
+    app.use(bodyParser.json({limit: '10mb'}));
+    app.use(methodOverride());
+    app.use(cookieParser());
+    require(__dirname + '/routes')(app);
+
+    // Don't expose our internal server to the outside.
+    const server = app.listen(0, 'localhost'),
+        io = sio(server);
+
+    server.listen(config.app.port, config.app.ip, () => {
+        console.log(`API Skalia server worker ${cluster.worker.id} up on ${config.app.port}`);
+        io.on('connection', function (socket) {
+            console.log('a user connected');
+        });
     });
 
-    if (!sticky.listen(server, 3000)) {
-        // Master code
+    // Tell Socket.IO to use the redis adapter. By default, the redis
+    // server is assumed to be on localhost:6379. You don't have to
+    // specify them explicitly unless you want to change them.
+    //TODO añadir el redis en el socket io
+    //io.adapter(sio_redis({ host: 'localhost', port: 6379 }));
 
-        server.once('listening', function() {
-            console.log('server started on 3000 port');
-        });
+    //TODO MIRAR COMO HACER EL HANDLER DE LOS MENSAJES
+    // Here you might use Socket.IO middleware for authorization etc.
 
-        // server.once(config.app.port, config.app.ip, () => {
-        //  console.log('API Skalia server listening on port '+config.app.port);
-        // });
-
-        for (let i = 0; i < numCPUs; i++) {
-            cluster.fork();
+    // Listen to messages sent from the master. Ignore everything else.
+    process.on('message', function (message, connection) {
+        if (message !== 'sticky-session:connection') {
+            return;
         }
 
-        let maxWorkerCrashes = config.security.restart;
-        cluster.on('exit', (worker, code, signal) => {
-            console.log('worker ' + worker.process.pid + ' died');
-            if (worker.suicide !== true) {
-                maxWorkerCrashes--;
-                if (maxWorkerCrashes <= 0) {
-                    console.log('Too many worker crashes -> process exit');
-                } else {
-                    cluster.fork();
-                }
-            }
-        });
+        // Emulate a connection event on the server by emitting the
+        // event with the connection the master sent us.
+        server.emit('connection', connection);
 
-    } else {
-        // Worker code
-        try {
-            require(__dirname+'/routes')(app);
-
-            console.log(`API Skalia server worker ${cluster.worker.id} up on ${config.app.port}`);
-
-            let io = require('socket.io')(server);
-            io.on('connection', function(socket){
-                console.log(`A user connected on ${cluster.worker.id}`);
-            });
-
-            /*server.listen(config.app.port, config.app.ip, () => {
-                // App.log().info(false,'Skalia server listening on port '+config.app.port+', env '+app.get('env'));
-                console.log('API Skalia server listening on port '+config.app.port);
-                let io = require('socket.io')(server);
-                io.on('connection', function(socket){
-                    console.log('a user connected');
-                });
-            });*/
-
-        } catch (err) {
-            console.log('Error arrancando servidor: '+(err.stack || JSON.stringify(err)))
-        }
-    }
-}).on('error',(err, data) => {
-    //App.log().error(false, { msg : 'Error en el setup del servidor: '+JSON.stringify(err), code : 500 , alert : 'system' },true);
-    console.log(err, data);
-    console.log('Error en el setup del servidor: '+JSON.stringify(err))
-});
-
-process.on('uncaughtException', (err) => {
-    console.log('Excepción: ',err);
-    if(err instanceof Error) {
-        //App.log().error(false, { msg : 'Excepción en el servidor: ' + err.toString() + 'en : ' + err.stack, code : 500 , alert : 'system' });
-        console.log('Excepción en el servidor: ' + err.toString() + 'en : ' + err.stack);
-        console.log(err.stack);
-    } else {
-        App.log().error(false, { msg : 'Excepción en el servidor: ' + JSON.stringify(err), code : 500 , alert : 'system' });
-    }
-});
-
-process.on('unhandledRejection', err => {
-    console.log('unhandledRejection: ',err);
-    if(err instanceof Error) {
-        //App.log().error(false, { msg : 'unhandledRejection en el servidor: ' + err.toString() + 'en : ' + err.stack, code : 500 , alert : 'system' });
-        console.log('unhandledRejection en el servidor: ' + err.toString() + 'en : ' + err.stack);
-        console.log(err.stack);
-    } else {
-        console.log('unhandledRejection en el servidor: ' + JSON.stringify(err));
-        //App.log().error(false, { msg : 'unhandledRejection en el servidor: ' + JSON.stringify(err), code : 500 , alert : 'system' });
-    }
-});
-
-// Expose app
-module.exports = app;
+        connection.resume();
+    });
+}
