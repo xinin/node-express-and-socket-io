@@ -1,8 +1,5 @@
 'use strict';
 
-var _ = require('lodash');
-
-// Get list of things
 exports.list = (req, res) => {
     res.json([
         {

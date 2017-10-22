@@ -1,12 +1,14 @@
 'use strict';
 
-var express = require('express');
-var controller = require('./card.controller');
+const express = require('express');
+const controller = require('./card.controller');
 
-var router = express.Router();
+const router = express.Router();
 
 router.get('/:id', controller.get);
 router.get('/', controller.list);
+
+
 
 
 module.exports = router;

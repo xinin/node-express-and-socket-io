@@ -2,10 +2,9 @@
 let config;
 let db;
 let socket;
+let utils;
 
-/**
- * Clase que gestiona la APP y todas sus dependencias
- */
+
 
 class App {
     static Config(){
@@ -19,13 +18,24 @@ class App {
     }
 
     static Socket(){
-        if(!socket) socket = require(_dirname+'/../Socket');
+        if(!socket) socket = require(__dirname+'/../Socket');
         return socket;
+    }
+
+    static Utils(){
+        if(!utils) utils = require(__dirname+'/../Utils');
+        return utils;
+    }
+
+    static getModel(model){
+        let m = require(__dirname+'/../Model/'+model);
+        return new m();
     }
 
     static launch(){
         return require(__dirname+'/servers');
     }
+
 }
 
 module.exports = App;
