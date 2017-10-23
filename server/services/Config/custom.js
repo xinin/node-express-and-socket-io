@@ -10,5 +10,5 @@ module.exports = {
     mongo : {
         path: `localhost:27017/skalia`
     },
-    numCPUs : 2
+    numCPUs : 1
 };

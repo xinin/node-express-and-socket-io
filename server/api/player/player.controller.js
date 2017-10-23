@@ -16,12 +16,11 @@ exports.register = function (req, res) {
             data =>{
                 Utils.response(req, res, data, 200);
             }, err => {
-                console.log("ENVIAMOS ERROR");
                 Utils.error(req, res, err)
             }
         );
     } else {
-        Utils.error(req, res, 412, 'Player info is required');
+        Utils.error(req, res, 'Player info is required', 412);
     }
 
 };
