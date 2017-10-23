@@ -22,8 +22,12 @@ const schema = {
 
 class Card {
 
-    static isValid(){
+    constructor(){
 
+    }
+
+    isValid(){
+        return true;
     }
 
 
