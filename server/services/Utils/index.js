@@ -15,28 +15,17 @@ class Utils {
     }
 
     static error(req, res, data, code) {
-        if (!_.isObject(data)) {
-            data = {
-                msg: data,
-                code: code || 500
-            };
-        } else {
-            if (!data.msg) {
-                data = {
-                    code: data.statusCode || isNaN(data.code) ? 500 : data.code,
-                    msg: data.toString() || JSON.stringify(data),
-                    alert: data.alert || false
-                }
-            }
+
+        let response = {
+            code: code || (data.code && !isNaN(data.code))? data.code : 500
+        };
+
+        if(data.code){
+            delete data.code;
         }
+        response.data = data;
         console.error(data); //TODO cambiar por sistema de logs
-        if (data.code > 600) {
-            data.code = 500;
-        }
-        return res.status(data.code).send({
-            code: data.statusCode || data.code,
-            msg: data.msg
-        });
+        return res.status(response.code).send(response);
     }
 
     static base64encode(string) {

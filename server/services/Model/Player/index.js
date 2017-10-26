@@ -1,5 +1,8 @@
 'use strict';
 
+const Joi = require('joi');
+
+
 const App = require(__dirname + '/../../App');
 
 
@@ -7,25 +10,19 @@ class Player {
 
     constructor() {
         this.collection = 'player';
-        //this.schema = new Schema();
-        //TODO USAR JOI
-        this.schema = {
-            /**
-             *
-             * id
-             * password (hash)
-             * email
-             * avatar
-             * points
-             * cards
-             * ...
-             */
-        };
+        this.schema = Joi.object().keys({ //TODO completar como deberia ser
+            id: Joi.string().alphanum().min(3).max(30).required(),
+            password: Joi.string(), //habra que convertirlo en hash y blablabal ahora paso
+            email: Joi.string().email(),
+            avatar: Joi.string()
+        });
     }
 
-    isValid(req, params) {
-        //TODO
-        return true;
+    isValid(req, player, params) {
+        return new Promise((resolve, reject) => {
+            //TODO hacer extensible a posibles parametros futuros y log en la req
+            Joi.validate(player, this.schema).then(resolve, reject);
+        });
     }
 
     register(req, params) { //TODO ver como hacer el envio de la contraseña si necesita aceptar una confirmacion de email o algo asi o no
@@ -33,31 +30,33 @@ class Player {
         return new Promise((resolve, reject) => {
             console.log("Entrando usuario para ser registrado"); //TODO modulo de logs
             let player = params.player;
-            if ($this.isValid(req, {player})) {
-                $this.findById(req, player.id).then(
-                    data => {
-                        reject({msg: 'User alredy exists', code: 412});
-                    }, err => {
-                        if (err && err.code === 404) {
-                            player._id= player.id;
-                            delete player.id;
-                            App.DB().mongoDb().collection($this.collection).insert(player, (err) => {
-                                if(err){
-                                    console.log("ERR", err); //TODO ESTO A ALERTAS
-                                    return reject({msg: 'Register service error', code: 500})
-                                } else {
-                                    return resolve(player);
-                                }
-                            });
-                        } else {
-                            console.log("ERR", err); //TODO ESTO A ALERTA
-                            reject({msg: 'Register service error', code: 500});
+
+            $this.isValid(req, player).then(
+                ()=> {
+                    $this.findById(req, player.id).then(
+                        () => reject({msg: 'User alredy exists', code: 412}),
+                        err => {
+                            if (err && err.code === 404) {
+                                player._id = player.id;
+                                delete player.id;
+                                App.DB().mongoDb().collection($this.collection).insert(player, (err) => {
+                                    if (err) {
+                                        console.log("ERR", err); //TODO ESTO A ALERTAS
+                                        return reject({msg: 'Register service error', code: 500})
+                                    } else {
+                                        return resolve(player);
+                                    }
+                                });
+                            } else {
+                                console.log("ERR", err); //TODO ESTO A ALERTA
+                                reject({msg: 'Register service error', code: 500});
+                            }
                         }
-                    }
-                );
-            } else {
-                reject({msg: 'User not valid', code: 412}); //TODO devovler error de JOI
-            }
+                    );
+                }, err => {
+                    reject({msg: `User not valid`, data: err.details, code: 412});
+                }
+            );
         });
     }
 

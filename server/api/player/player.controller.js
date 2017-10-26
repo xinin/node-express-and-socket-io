@@ -9,8 +9,6 @@ exports.register = function (req, res) {
 
     let player = req.body.player;
 
-    console.log("PLAYER", Player)
-
     if(player){
         Player.register(req, {player}).then(
             data =>{
