@@ -84,6 +84,19 @@ if (cluster.isMaster) {
         console.log(`API Skalia server worker ${cluster.worker.id} up on ${port}`);
         io.on('connection', function (socket) {
             console.log('a user connected');
+            socket.broadcast.emit('hi');
+
+            socket.on('chat message', function(msg){
+                io.emit('chat message', 'Me han enviado un mensaje');
+                socket.broadcast.emit('global', 'Me has enviado '+msg);
+            });
+
+            socket.on('disconnect', function(){
+                console.log('user disconnected');
+            });
+            socket.on('chat message', function(msg){
+                console.log('message: ' + msg);
+            });
         });
     });
 

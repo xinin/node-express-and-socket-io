@@ -6,8 +6,24 @@
 
 <script src="node_modules/socket.io-client/dist/socket.io.js"></script>
 <script>
-    var socket = io('127.0.0.1:9000');
+        var socket = io('127.0.0.1:9000');
+
+        function emitMessage() {
+            socket.emit('chat message', 'hola');
+        }
+
+        socket.on('chat message', function(msg){
+            console.log("ME LLEGA MENSAJE", msg);
+        });
+
+        socket.on('global', function(msg){
+            console.log("ME LLEGA MENSAJE", msg);
+        });
+
 </script>
+
+<button type="button" onclick="emitMessage()">Click Me!</button>
+
 
 </body>
 </html>
