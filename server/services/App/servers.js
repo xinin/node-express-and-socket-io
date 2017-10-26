@@ -77,27 +77,12 @@ if (cluster.isMaster) {
     require(__dirname + '/routes')(app);
 
     // Don't expose our internal server to the outside.
-    const server = app.listen(0, 'localhost'),
-        io = sio(server);
+    const server = app.listen(0, 'localhost');
+    const io = sio(server);
 
     server.listen(port, config.app.ip, () => {
         console.log(`API Skalia server worker ${cluster.worker.id} up on ${port}`);
-        io.on('connection', function (socket) {
-            console.log('a user connected');
-            io.emit('global', { for: 'everyone' , msg: 'Nuevo usuario conectado'});
-            socket.broadcast.emit('global', 'Se ha conectado otro usuario');
-
-            socket.on('chat message', function(msg){
-                socket.emit('chat message', 'Me has enviado un mensaje');
-            });
-
-            socket.on('disconnect', function(){
-                console.log('user disconnected');
-            });
-            socket.on('chat message', function(msg){
-                console.log('message: ' + msg);
-            });
-        });
+        require(__dirname + '/sockets')(io);
     });
 
     // Tell Socket.IO to use the redis adapter. By default, the redis
@@ -109,7 +94,7 @@ if (cluster.isMaster) {
     //TODO MIRAR COMO HACER EL HANDLER DE LOS MENSAJES
     // Here you might use Socket.IO middleware for authorization etc.
 
-    // Listen to messages sent from the master. Ignore everything else.
+    // Listen to messages sent from the master. Ignore everything else. API + Sockets
     process.on('message', function (message, connection) {
         if (message !== 'sticky-session:connection') {
             return;

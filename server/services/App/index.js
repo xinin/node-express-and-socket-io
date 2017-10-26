@@ -1,7 +1,6 @@
 'use strict';
 let config;
 let db;
-let socket;
 let utils;
 
 
@@ -17,9 +16,9 @@ class App {
         return new db();
     }
 
-    static Socket(){
-        if(!socket) socket = require(__dirname+'/../Socket');
-        return socket;
+    static Socket(io, socket){
+        let s = require(__dirname+'/../Socket');
+        return new s(io, socket);
     }
 
     static Utils(){
