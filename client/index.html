@@ -1,0 +1,166 @@
+<html>
+<head>
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="font-awesome-4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center text-center" style="margin-top: 40px">
+        <div class="col-sm-6">
+            <h1>Sign up</h1>
+            <div class="row justify-content-center">
+                <div class="col-sm-6">
+                    <form onsubmit="event.preventDefault(); signUp();">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="nicknameSignUp" placeholder="Nickname" required value="aaa">
+                        </div>
+                        <div class="input-group">
+                            <input type="email" class="form-control" id="emailSignUp" placeholder="Email" required value="a@a.com">
+                        </div>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="passwordSignUp" placeholder="Password" required value="123">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 10px">Submit</button>
+                    </form>
+                </div>
+            </div>
+            <div id="alertsSignUp"></div>
+        </div>
+        <div class="col-sm-6">
+            <h1>Log in</h1>
+            <div class="row justify-content-center">
+                <div class="col-sm-6">
+                    <form onsubmit="event.preventDefault(); logIn();">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="nicknameLogIn" placeholder="Nickname" required value="aaa">
+                        </div>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="passwordLogIn" placeholder="Password" required value="123">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 10px">Submit</button>
+                    </form>
+                </div>
+            </div>
+            <div id="alertsLogIn">
+
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="row justify-content-center text-center">
+        <h1>
+           Datos de Usuario
+        </h1>
+    </div>
+    <div class="row justify-content-center text-center">
+        <div class="col-md-12">
+            <code id="userInfo"></code>
+        </div>
+    </div>
+    <hr>
+    <div class="row justify-content-center text-center">
+            <h1>Buscador de partida</h1>
+            <div class="col-md-12">
+                <button type="button" class="btn btn-primary">
+                    <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                    <i class="fa fa-gamepad" aria-hidden="true"></i>
+                </button>
+            </div>
+    </div>
+</div>
+
+<script src="../node_modules/socket.io-client/dist/socket.io.js"></script>
+<script src="js/jquery/jquery.js"></script>
+<script src="js/bootstrap/popper.js"></script>
+<script src="js/bootstrap/bootstrap.js"></script>
+<script>
+
+
+    function callApi(uri, method, data, sucess, error){
+        var api = 'http://localhost:9000';
+        $.ajax({
+            url : api+uri,
+            type: method || 'GET',
+            data : (data)?JSON.stringify(data): undefined,
+            processData: false,
+            contentType : 'application/json',
+            success: sucess,
+            error: error
+        });
+    }
+
+    function signUp() {
+
+        var player = {
+            id: document.getElementById("nicknameSignUp").value,
+            email: document.getElementById("emailSignUp").value,
+            password: window.btoa(document.getElementById("passwordSignUp").value)
+        };
+
+        callApi('/player/signUp', 'POST', {player},
+        function (data) {
+            document.getElementById('alertsSignUp').innerHTML="";
+            $( "#alertsSignUp" ).append( '<div class="alert alert-success"><strong>Usuario creado</strong> correctamente</div>');
+
+        }, function (data) {
+                document.getElementById('alertsSignUp').innerHTML="";
+                $( "#alertsSignUp" ).append( '<div class="alert alert-danger"><strong>Error creando usuario.</strong><br> '+data.responseJSON.data.msg+' </div>');
+            }
+        )
+
+    }
+
+    function logIn() {
+
+        var player = {
+            id: document.getElementById("nicknameLogIn").value,
+            password: window.btoa(document.getElementById("passwordLogIn").value)
+        };
+
+        callApi('/player/logIn', 'POST', {player},
+            function (data) {
+                document.getElementById('alertsLogIn').innerHTML="";
+                $( "#alertsLogIn" ).append( '<div class="alert alert-success"><strong>Usuario logado</strong> correctamente</div>');
+                localStorage.setItem("player", JSON.stringify(data.data));
+                console.log(localStorage.getItem("player"));
+                document.getElementById('userInfo').innerHTML=localStorage.getItem("player");
+            }, function (data) {
+                console.log("DATA KO", data.responseJSON);
+                document.getElementById('alertsLogIn').innerHTML="";
+                if(data.responseJSON.code === 403){
+                    $( "#alertsLogIn" ).append( '<div class="alert alert-danger">Contraseña no válida.</div>');
+                } else if(data.responseJSON.code === 404){
+                    $( "#alertsLogIn" ).append( '<div class="alert alert-danger">El usuario no existe.</div>');
+                } else {
+                    $( "#alertsLogIn" ).append( '<div class="alert alert-danger">Error en el login. '+data.responseJSON.data.msg+'</div>');
+                }
+            }
+        )
+
+    }
+
+
+//    var socket = io('127.0.0.1:9000');
+//
+//    function emitMessage() {
+//        socket.emit('chat message', 'hola');
+//    }
+//
+//    socket.on('chat message', function (msg) {
+//        console.log("CHAT MESSAGE", msg);
+//    });
+//
+//    socket.on('global', function (msg) {
+//        console.log("Mensaje Global", msg);
+//    });
+//
+//    socket.on('')
+//
+//    function addQueue() {
+//        var playerName = document.getElementsByName('fname')[0].value;
+//        socket.emit('addQueue', {player: {id: playerName}});
+//    }
+
+</script>
+</body>
+</html>

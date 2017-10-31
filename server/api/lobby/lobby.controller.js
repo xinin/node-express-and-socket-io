@@ -9,4 +9,7 @@ exports.queue = function (req, res) {
 
 
 
+    //TODO
+    //USAR findAndModify (con remove true) de Mongo para encontrar rivales unicos, si no encuentra insertar el usuario actual
+
 };

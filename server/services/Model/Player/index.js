@@ -1,10 +1,11 @@
 'use strict';
 
 const Joi = require('joi');
-
+const bcrypt = require('bcrypt');
 
 const App = require(__dirname + '/../../App');
-
+const Config = App.Config();
+const Utils = App.Utils();
 
 class Player {
 
@@ -19,16 +20,16 @@ class Player {
     }
 
     isValid(req, player, params) {
+        const $this = this;
         return new Promise((resolve, reject) => {
             //TODO hacer extensible a posibles parametros futuros y log en la req
-            Joi.validate(player, this.schema).then(resolve, reject);
+            Joi.validate(player, $this.schema).then(resolve, reject);
         });
     }
 
-    register(req, params) { //TODO ver como hacer el envio de la contraseña si necesita aceptar una confirmacion de email o algo asi o no
+    signUp(req, params) { //TODO ver como hacer el envio de la contraseña si necesita aceptar una confirmacion de email o algo asi o no
         const $this = this;
         return new Promise((resolve, reject) => {
-            console.log("Entrando usuario para ser registrado"); //TODO modulo de logs
             let player = params.player;
 
             $this.isValid(req, player).then(
@@ -39,6 +40,7 @@ class Player {
                             if (err && err.code === 404) {
                                 player._id = player.id;
                                 delete player.id;
+                                player.password = Utils.encrypt(player.password);
                                 App.DB().mongoDb().collection($this.collection).insert(player, (err) => {
                                     if (err) {
                                         console.log("ERR", err); //TODO ESTO A ALERTAS
@@ -54,18 +56,17 @@ class Player {
                         }
                     );
                 }, err => {
-                    reject({msg: `User not valid`, data: err.details, code: 412});
+                    reject({msg: `Player not valid`, data: err.details, code: 412});
                 }
             );
         });
     }
 
-    findById(req, playerId) { //TODO añadir parametro de proyeccion para cuando solo ns interese una parte como por ejemplo en el exists
+    findById(req, playerId, params) { //TODO añadir parametro de proyeccion para cuando solo ns interese una parte como por ejemplo en el exists
         const $this = this;
         return new Promise((resolve, reject) => {
             if (playerId) {
                 playerId = playerId.trim();
-                console.log("Comprobando si el jugador existe", playerId);
                 App.DB().mongoDb().collection($this.collection).findOne({_id: playerId}, (err, item) => {
                     if (!item) {
                         if (err) {
@@ -82,6 +83,42 @@ class Player {
                 reject({msg: 'Player ID is required', code: 412});
             }
         });
+    }
+
+    logIn(req, params) {
+      const $this = this;
+      return new Promise((resolve, reject)=>{
+          let player = params.player;
+
+          $this.isValid(req, player).then(
+              () => {
+                  $this.findById(req, player.id).then(
+                      data => {
+                          data.id = data._id;
+                          delete data._id;
+                          player.password = Utils.encrypt(player.password);
+                          console.log(player.password, data.password)
+                          if(player.password === data.password){
+                              delete data.password;
+                              resolve(data);
+                          } else {
+                              reject({msg: 'Wrong Password', code:403});
+                          }
+                      },err => {
+                          if (err && err.code === 404) {
+                              reject({msg: 'User not exists', code: 404});
+                          } else {
+                              console.log("ERR", err); //TODO ESTO A ALERTA
+                              reject({msg: 'Register service error', code: 500});
+                          }
+                      }
+                  );
+              }, err => {
+                  console.log("ERR",err);
+                  reject({msg: `Player not valid`, data: err.details, code: 412});
+              }
+          );
+      })
     }
 
 }

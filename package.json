@@ -3,11 +3,13 @@
   "version": "0.0.0",
   "main": "server/app.js",
   "dependencies": {
+    "bcrypt": "^1.0.3",
     "body-parser": "~1.5.0",
     "composable-middleware": "^0.3.0",
     "compression": "~1.0.1",
     "connect-mongo": "^0.8.1",
     "cookie-parser": "~1.0.1",
+    "cors": "^2.8.4",
     "errorhandler": "~1.0.0",
     "express": "~4.9.0",
     "express-session": "~1.0.2",

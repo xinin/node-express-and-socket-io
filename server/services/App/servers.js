@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
+const cors = require('cors');
 
 const App = require(__dirname + '/index');
 const config = App.Config();
@@ -62,6 +63,7 @@ if (cluster.isMaster) {
 } else {
     // Note we don't use a port here because the master listens on it for us.
     const app = new express();
+
     app.use(helmet.hidePoweredBy({setTo: 'PHP 5.2.0'}));  // hidePoweredBy to remove the X-Powered-By header
     app.use(helmet.hsts({maxAge: 7776000000}));           // hsts for HTTP Strict Transport Security
     app.use(helmet.ieNoOpen());                             // ieNoOpen sets X-Download-Options for IE8+
@@ -74,6 +76,8 @@ if (cluster.isMaster) {
     app.use(bodyParser.json({limit: '10mb'}));
     app.use(methodOverride());
     app.use(cookieParser());
+    app.use(cors());
+
     require(__dirname + '/routes')(app);
 
     // Don't expose our internal server to the outside.

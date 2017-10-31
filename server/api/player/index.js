@@ -5,6 +5,7 @@ var controller = require('./player.controller');
 
 var router = express.Router();
 
-router.post('/register', controller.register);
+router.post('/signUp', controller.signUp);
+router.post('/logIn', controller.logIn);
 
 module.exports = router;

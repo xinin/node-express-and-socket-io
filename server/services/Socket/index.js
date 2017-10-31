@@ -17,8 +17,8 @@ class Socket {
         }
     }
 
-    sendMessage(msg, params) { //Envio de mensaje al emisor del mensaje original
-        this.socket.emit('chat message', msg);
+    sendMessage(channel, msg, params) { //Envio de mensaje al emisor del mensaje original
+        this.socket.emit(channel, msg);
     }
 
 }

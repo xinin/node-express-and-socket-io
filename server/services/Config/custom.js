@@ -10,5 +10,9 @@ module.exports = {
     mongo : {
         path: `localhost:27017/skalia`
     },
-    numCPUs : 1
+    numCPUs : 2,
+    crypto: {
+        algorithm: 'aes-256-ctr',
+        password: 'passwordDEV'
+    }
 };
