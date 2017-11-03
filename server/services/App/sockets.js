@@ -26,16 +26,18 @@ module.exports = function(io) {
         /***
          * args será el player
          */
-        socket.on('addQueue', (args) =>{
+        socket.on('matching', (args) =>{
             let player = args.player;
-            Lobby.addPlayerToQueue(null, player).then(
-                data =>{
-                    if(!data) data = {};  //TODO HACER UN UTILS PARA REQUEST DE SOCKETS
-                    data.process = 'addQueue';
-                    Socket.sendMessage('addQueue',data);
+            Lobby.matching(null, player).then(
+                match=>{
+                    socket.join(match.id);
+                    Socket.sendMessage('matching',{match: match, code:200});
+                    if(!match.new){
+                        io.to(match).emit('match ready', {players: [match.id, player.id]});
+                    }
                 }, err => {
-                    err.process = 'addQueue';
-                    Socket.sendMessage('addQueue',err);
+                    err.process = 'matching';
+                    Socket.sendMessage('matching',err);
                 }
             );
         })

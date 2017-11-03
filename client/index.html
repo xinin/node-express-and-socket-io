@@ -56,8 +56,7 @@
         <div class="col-md-12">
             <div class="row justify-content-center"><code id="userInfo"></code></div>
             <button type="button" class="btn btn-primary" onclick="logOut()" style="margin-top: 10px">
-                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
-                <i class="fa fa-gamepad" aria-hidden="true"></i>
+                <i class="fa  fa-sign-out" aria-hidden="true"></i>
             </button>
         </div>
     </div>
@@ -66,10 +65,12 @@
             <h1>Buscador de partida</h1>
             <div class="col-md-12">
                 <button type="button" class="btn btn-primary" onclick="startMatching()">
-                    <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                     <i class="fa fa-gamepad" aria-hidden="true"></i>
                 </button>
-                <div id="alertsMatching"></div>
+                <button type="button" class="btn btn-danger" onclick="stopMatching()">
+                    <i class="fa fa-gamepad" aria-hidden="true"></i>
+                </button>
+                <div id="alertsMatching" style="margin-top: 10px"></div>
             </div>
     </div>
 </div>
@@ -80,10 +81,11 @@
 <script src="js/bootstrap/bootstrap.js"></script>
 <script>
 
+    var socket;
+    var matchSocket;
+
     $( document ).ready(function() {
-        if(localStorage.getItem('player')){
-            document.getElementById('userInfo').innerHTML=localStorage.getItem('player');
-        }
+        load();
     });
 
     function callApi(uri, method, data, sucess, error){
@@ -153,14 +155,57 @@
     function startMatching() {
         var player = localStorage.getItem('player');
         if(player){
-            console.log("HAY PLAYER", player);
+            socket.emit('matching', {player:JSON.parse(player)});
+
+
         } else {
             $( '#alertsMatching' ).append( '<div class="alert alert-danger">El usuario no está logado.</div>');
         }
     }
 
+    function stopMatching() {
+        $( '#alertsMatching' ).innerHTML=null;
+        localStorage.removeItem('match');
+        //TODO llamada api para borrarla
+    }
 
-//    var socket = io('127.0.0.1:9000');
+    function load() {
+        if(localStorage.getItem('player')){
+            document.getElementById('userInfo').innerHTML=localStorage.getItem('player');
+        }
+
+        socket = io('127.0.0.1:9000');
+        socket.on('global', function (msg) {
+            console.log("Mensaje Global", msg);
+        });
+
+        socket.on('matching', function (msg) {
+            console.log("MATHCING", msg);
+            $( '#alertsMatching' ).innerHTML=null;
+            if(msg.code === 500){
+                $( '#alertsMatching' ).append( '<div class="alert alert-danger">Ha ocurrido un error al buscar partida</div>');
+            }else if(msg.code=== 200){
+                console.log('127.0.0.1:9000/'+msg.match.id);
+                loadMatchSocket(msg.match.id);
+                localStorage.setItem('match', JSON.stringify(msg.match));
+                $( '#alertsMatching' ).append( '<div class="alert alert-info">Esperando jugadores ...</div>');
+            } else {
+                console.log("MSG", msg);
+            }
+        });
+
+        function loadMatchSocket(room) {
+            matchSocket = io('127.0.0.1:9000/'+room);
+
+            matchSocket.on('match ready', function (msg) {
+                console.log("MATCH READY", msg)
+            });
+        }
+
+
+
+    }
+
 //
 //    function emitMessage() {
 //        socket.emit('chat message', 'hola');
@@ -170,16 +215,10 @@
 //        console.log("CHAT MESSAGE", msg);
 //    });
 //
-//    socket.on('global', function (msg) {
-//        console.log("Mensaje Global", msg);
-//    });
+
 //
-//    socket.on('')
 //
-//    function addQueue() {
-//        var playerName = document.getElementsByName('fname')[0].value;
-//        socket.emit('addQueue', {player: {id: playerName}});
-//    }
+
 
 </script>
 </body>
