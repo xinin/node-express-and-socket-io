@@ -54,17 +54,22 @@
     </div>
     <div class="row justify-content-center text-center">
         <div class="col-md-12">
-            <code id="userInfo"></code>
+            <div class="row justify-content-center"><code id="userInfo"></code></div>
+            <button type="button" class="btn btn-primary" onclick="logOut()" style="margin-top: 10px">
+                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                <i class="fa fa-gamepad" aria-hidden="true"></i>
+            </button>
         </div>
     </div>
     <hr>
     <div class="row justify-content-center text-center">
             <h1>Buscador de partida</h1>
             <div class="col-md-12">
-                <button type="button" class="btn btn-primary">
+                <button type="button" class="btn btn-primary" onclick="startMatching()">
                     <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                     <i class="fa fa-gamepad" aria-hidden="true"></i>
                 </button>
+                <div id="alertsMatching"></div>
             </div>
     </div>
 </div>
@@ -75,6 +80,11 @@
 <script src="js/bootstrap/bootstrap.js"></script>
 <script>
 
+    $( document ).ready(function() {
+        if(localStorage.getItem('player')){
+            document.getElementById('userInfo').innerHTML=localStorage.getItem('player');
+        }
+    });
 
     function callApi(uri, method, data, sucess, error){
         var api = 'http://localhost:9000';
@@ -92,40 +102,36 @@
     function signUp() {
 
         var player = {
-            id: document.getElementById("nicknameSignUp").value,
-            email: document.getElementById("emailSignUp").value,
-            password: window.btoa(document.getElementById("passwordSignUp").value)
+            id: document.getElementById('nicknameSignUp').value,
+            email: document.getElementById('emailSignUp').value,
+            password: window.btoa(document.getElementById('passwordSignUp').value)
         };
 
         callApi('/player/signUp', 'POST', {player},
         function (data) {
             document.getElementById('alertsSignUp').innerHTML="";
-            $( "#alertsSignUp" ).append( '<div class="alert alert-success"><strong>Usuario creado</strong> correctamente</div>');
-
+            $( '#alertsSignUp' ).append( '<div class="alert alert-success"><strong>Usuario creado</strong> correctamente</div>');
         }, function (data) {
                 document.getElementById('alertsSignUp').innerHTML="";
-                $( "#alertsSignUp" ).append( '<div class="alert alert-danger"><strong>Error creando usuario.</strong><br> '+data.responseJSON.data.msg+' </div>');
+                $( '#alertsSignUp' ).append( '<div class="alert alert-danger"><strong>Error creando usuario.</strong><br> '+data.responseJSON.data.msg+' </div>');
             }
-        )
-
+        );
     }
 
     function logIn() {
 
         var player = {
-            id: document.getElementById("nicknameLogIn").value,
-            password: window.btoa(document.getElementById("passwordLogIn").value)
+            id: document.getElementById('nicknameLogIn').value,
+            password: window.btoa(document.getElementById('passwordLogIn').value)
         };
 
         callApi('/player/logIn', 'POST', {player},
             function (data) {
                 document.getElementById('alertsLogIn').innerHTML="";
                 $( "#alertsLogIn" ).append( '<div class="alert alert-success"><strong>Usuario logado</strong> correctamente</div>');
-                localStorage.setItem("player", JSON.stringify(data.data));
-                console.log(localStorage.getItem("player"));
-                document.getElementById('userInfo').innerHTML=localStorage.getItem("player");
+                localStorage.setItem('player', JSON.stringify(data.data));
+                document.getElementById('userInfo').innerHTML=localStorage.getItem('player');
             }, function (data) {
-                console.log("DATA KO", data.responseJSON);
                 document.getElementById('alertsLogIn').innerHTML="";
                 if(data.responseJSON.code === 403){
                     $( "#alertsLogIn" ).append( '<div class="alert alert-danger">Contraseña no válida.</div>');
@@ -137,6 +143,20 @@
             }
         )
 
+    }
+
+    function logOut() {
+        document.getElementById('userInfo').innerHTML=null;
+        localStorage.removeItem('player');
+    }
+
+    function startMatching() {
+        var player = localStorage.getItem('player');
+        if(player){
+            console.log("HAY PLAYER", player);
+        } else {
+            $( '#alertsMatching' ).append( '<div class="alert alert-danger">El usuario no está logado.</div>');
+        }
     }
 
 
