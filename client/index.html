@@ -82,7 +82,6 @@
 <script>
 
     var socket;
-    var matchSocket;
 
     $( document ).ready(function() {
         load();
@@ -111,10 +110,10 @@
 
         callApi('/player/signUp', 'POST', {player},
         function (data) {
-            document.getElementById('alertsSignUp').innerHTML="";
+            $('#alertsSignUp').empty();
             $( '#alertsSignUp' ).append( '<div class="alert alert-success"><strong>Usuario creado</strong> correctamente</div>');
         }, function (data) {
-                document.getElementById('alertsSignUp').innerHTML="";
+                $('#alertsSignUp').empty();
                 $( '#alertsSignUp' ).append( '<div class="alert alert-danger"><strong>Error creando usuario.</strong><br> '+data.responseJSON.data.msg+' </div>');
             }
         );
@@ -134,7 +133,7 @@
                 localStorage.setItem('player', JSON.stringify(data.data));
                 document.getElementById('userInfo').innerHTML=localStorage.getItem('player');
             }, function (data) {
-                document.getElementById('alertsLogIn').innerHTML="";
+                $('#alertsLogIn').empty();
                 if(data.responseJSON.code === 403){
                     $( "#alertsLogIn" ).append( '<div class="alert alert-danger">Contraseña no válida.</div>');
                 } else if(data.responseJSON.code === 404){
@@ -148,7 +147,7 @@
     }
 
     function logOut() {
-        document.getElementById('userInfo').innerHTML=null;
+        document.getElementById('userInfo').empty();
         localStorage.removeItem('player');
     }
 
@@ -156,15 +155,13 @@
         var player = localStorage.getItem('player');
         if(player){
             socket.emit('matching', {player:JSON.parse(player)});
-
-
         } else {
             $( '#alertsMatching' ).append( '<div class="alert alert-danger">El usuario no está logado.</div>');
         }
     }
 
     function stopMatching() {
-        $( '#alertsMatching' ).innerHTML=null;
+        $( '#alertsMatching' ).empty();
         localStorage.removeItem('match');
         //TODO llamada api para borrarla
     }
@@ -180,13 +177,10 @@
         });
 
         socket.on('matching', function (msg) {
-            console.log("MATHCING", msg);
-            $( '#alertsMatching' ).innerHTML=null;
+            $( '#alertsMatching' ).empty();
             if(msg.code === 500){
                 $( '#alertsMatching' ).append( '<div class="alert alert-danger">Ha ocurrido un error al buscar partida</div>');
             }else if(msg.code=== 200){
-                console.log('127.0.0.1:9000/'+msg.match.id);
-                loadMatchSocket(msg.match.id);
                 localStorage.setItem('match', JSON.stringify(msg.match));
                 $( '#alertsMatching' ).append( '<div class="alert alert-info">Esperando jugadores ...</div>');
             } else {
@@ -194,30 +188,12 @@
             }
         });
 
-        function loadMatchSocket(room) {
-            matchSocket = io('127.0.0.1:9000/'+room);
-
-            matchSocket.on('match ready', function (msg) {
-                console.log("MATCH READY", msg)
-            });
-        }
-
-
+        socket.on('matchready', function (msg) {
+            $('#alertsMatching').empty();
+            $('#alertsMatching').append( '<div class="alert alert-success"><strong>Partida encontrada</strong><br><span>Match ID:'+msg.id+'<br>Players:'+msg.players+'</span></div>');
+        });
 
     }
-
-//
-//    function emitMessage() {
-//        socket.emit('chat message', 'hola');
-//    }
-//
-//    socket.on('chat message', function (msg) {
-//        console.log("CHAT MESSAGE", msg);
-//    });
-//
-
-//
-//
 
 
 </script>

@@ -33,7 +33,7 @@ module.exports = function(io) {
                     socket.join(match.id);
                     Socket.sendMessage('matching',{match: match, code:200});
                     if(!match.new){
-                        io.to(match).emit('match ready', {players: [match.id, player.id]});
+                        io.to(match.id).emit('matchready', {id:match.id, players: [match.id, player.id]});
                     }
                 }, err => {
                     err.process = 'matching';
