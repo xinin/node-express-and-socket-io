@@ -66,6 +66,7 @@ class Lobby{
             player.time = new Date().getTime();
             player._id = player.id;
             delete player.id;
+            delete player.email;
 
             App.DB().mongoDb().collection($this.collection).replaceOne({ _id : player._id}, player, {upsert: true},(err) => {
                 if (err) {
@@ -78,8 +79,18 @@ class Lobby{
         });
     }
 
-    checkAvailableGame(req){
-        //TODO Mirar si hay alguien esperando con el que poder ser emperejado y si es asi notificar a ambos, si el usuario no tiene disponible crea una y este se subscribe a este scoket
+    cancelMatch(req, match){
+        const $this = this;
+        return new Promise((resolve, reject)=>{
+            App.DB().mongoDb().collection($this.collection).deleteOne({ _id : match._id},(err) => {
+                if (err) {
+                    console.log("ERR", err); //TODO ESTO A ALERTAS
+                    return reject({msg: 'Unnable to delete match', code: 500})
+                } else {
+                    return resolve();
+                }
+            });
+        });
     }
 
 }

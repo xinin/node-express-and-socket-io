@@ -17,8 +17,24 @@ class Socket {
         }
     }
 
-    sendMessage(channel, msg, params) { //Envio de mensaje al emisor del mensaje original
+    sendRoomMessage(msg, channel, room){
+        this.io.to(room).emit(channel, msg);
+    }
+
+    sendMessage(msg, channel) { //Envio de mensaje al emisor del mensaje original
         this.socket.emit(channel, msg);
+    }
+
+    sendError(msg) {
+        this.socket.emit('error', msg);
+    }
+
+    joinRoom(room) {
+        this.socket.join(room);
+    }
+
+    leaveRoom(room) {
+        this.socket.leave(room);
     }
 
 }

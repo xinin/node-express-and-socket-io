@@ -6,19 +6,25 @@
 <body>
 <div class="container">
     <div class="row justify-content-center text-center" style="margin-top: 40px">
+        <h1>SKALIA</h1>
+    </div>
+    <div class="row justify-content-center text-center" style="margin-top: 20px">
         <div class="col-sm-6">
-            <h1>Sign up</h1>
+            <h2>Sign up</h2>
             <div class="row justify-content-center">
                 <div class="col-sm-6">
                     <form onsubmit="event.preventDefault(); signUp();">
                         <div class="input-group">
-                            <input type="text" class="form-control" id="nicknameSignUp" placeholder="Nickname" required value="aaa">
+                            <input type="text" class="form-control" id="nicknameSignUp" placeholder="Nickname" required
+                                   value="aaa">
                         </div>
                         <div class="input-group">
-                            <input type="email" class="form-control" id="emailSignUp" placeholder="Email" required value="a@a.com">
+                            <input type="email" class="form-control" id="emailSignUp" placeholder="Email" required
+                                   value="a@a.com">
                         </div>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="passwordSignUp" placeholder="Password" required value="123">
+                            <input type="password" class="form-control" id="passwordSignUp" placeholder="Password"
+                                   required value="123">
                         </div>
                         <button type="submit" class="btn btn-primary" style="margin-top: 10px">Submit</button>
                     </form>
@@ -27,51 +33,53 @@
             <div id="alertsSignUp"></div>
         </div>
         <div class="col-sm-6">
-            <h1>Log in</h1>
+            <h2>Log in</h2>
             <div class="row justify-content-center">
                 <div class="col-sm-6">
                     <form onsubmit="event.preventDefault(); logIn();">
                         <div class="input-group">
-                            <input type="text" class="form-control" id="nicknameLogIn" placeholder="Nickname" required value="aaa">
+                            <input type="text" class="form-control" id="nicknameLogIn" placeholder="Nickname" required
+                                   value="aaa">
                         </div>
                         <div class="input-group">
-                            <input type="password" class="form-control" id="passwordLogIn" placeholder="Password" required value="123">
+                            <input type="password" class="form-control" id="passwordLogIn" placeholder="Password"
+                                   required value="123">
                         </div>
                         <button type="submit" class="btn btn-primary" style="margin-top: 10px">Submit</button>
                     </form>
                 </div>
             </div>
-            <div id="alertsLogIn">
-
-            </div>
+            <div id="alertsLogIn"></div>
         </div>
     </div>
     <hr>
     <div class="row justify-content-center text-center">
-        <h1>
-           Datos de Usuario
-        </h1>
+        <h2>User Data</h2>
     </div>
     <div class="row justify-content-center text-center">
         <div class="col-md-12">
             <div class="row justify-content-center"><code id="userInfo"></code></div>
-            <button type="button" class="btn btn-primary" onclick="logOut()" style="margin-top: 10px">
-                <i class="fa  fa-sign-out" aria-hidden="true"></i>
+            <button id="logOutButton" type="button" class="btn btn-danger" onclick="logOut()"
+                    style="margin-top: 10px; visibility: hidden;">
+                <span style="margin-right: 10px">Log out</span><i class="fa  fa-sign-out" aria-hidden="true"></i>
             </button>
         </div>
     </div>
     <hr>
     <div class="row justify-content-center text-center">
-            <h1>Buscador de partida</h1>
-            <div class="col-md-12">
-                <button type="button" class="btn btn-primary" onclick="startMatching()">
-                    <i class="fa fa-gamepad" aria-hidden="true"></i>
-                </button>
-                <button type="button" class="btn btn-danger" onclick="stopMatching()">
-                    <i class="fa fa-gamepad" aria-hidden="true"></i>
-                </button>
-                <div id="alertsMatching" style="margin-top: 10px"></div>
-            </div>
+        <h2>New Match</h2>
+    </div>
+    <div class="row justify-content-center text-center">
+        <div class="col-md-12">
+            <button id="matchButton" type="button" class="btn btn-primary" onclick="startMatching()">
+                <span style="margin-right: 10px">Search</span><i class="fa fa-gamepad" aria-hidden="true"></i>
+            </button>
+            <button id="matchCancelButton" type="button" class="btn btn-danger" onclick="stopMatching()"
+                    style="visibility: hidden;">
+                <span style="margin-right: 10px">Cancel</span><i class="fa fa-gamepad" aria-hidden="true"></i>
+            </button>
+            <div id="alertsMatching" style="margin-top: 10px"></div>
+        </div>
     </div>
 </div>
 
@@ -81,20 +89,21 @@
 <script src="js/bootstrap/bootstrap.js"></script>
 <script>
 
-    var socket;
+    var socket = io('127.0.0.1:9000');
 
-    $( document ).ready(function() {
+
+    $(document).ready(function () {
         load();
     });
 
-    function callApi(uri, method, data, sucess, error){
+    function callApi(uri, method, data, sucess, error) {
         var api = 'http://localhost:9000';
         $.ajax({
-            url : api+uri,
+            url: api + uri,
             type: method || 'GET',
-            data : (data)?JSON.stringify(data): undefined,
+            data: (data) ? JSON.stringify(data) : undefined,
             processData: false,
-            contentType : 'application/json',
+            contentType: 'application/json',
             success: sucess,
             error: error
         });
@@ -109,12 +118,12 @@
         };
 
         callApi('/player/signUp', 'POST', {player},
-        function (data) {
-            $('#alertsSignUp').empty();
-            $( '#alertsSignUp' ).append( '<div class="alert alert-success"><strong>Usuario creado</strong> correctamente</div>');
-        }, function (data) {
+            function (data) {
                 $('#alertsSignUp').empty();
-                $( '#alertsSignUp' ).append( '<div class="alert alert-danger"><strong>Error creando usuario.</strong><br> '+data.responseJSON.data.msg+' </div>');
+                $('#alertsSignUp').append('<div class="alert alert-success"><strong>User created</strong> sucessfully</div>');
+            }, function (data) {
+                $('#alertsSignUp').empty();
+                $('#alertsSignUp').append('<div class="alert alert-danger"><strong>An error has occurred.</strong><br> ' + data.responseJSON.data.msg + '</div>');
             }
         );
     }
@@ -128,18 +137,18 @@
 
         callApi('/player/logIn', 'POST', {player},
             function (data) {
-                document.getElementById('alertsLogIn').innerHTML="";
-                $( "#alertsLogIn" ).append( '<div class="alert alert-success"><strong>Usuario logado</strong> correctamente</div>');
+                document.getElementById('alertsLogIn').innerHTML = "";
                 localStorage.setItem('player', JSON.stringify(data.data));
-                document.getElementById('userInfo').innerHTML=localStorage.getItem('player');
+                document.getElementById('userInfo').innerHTML = localStorage.getItem('player');
+                document.getElementById('logOutButton').style.visibility = "visible";
             }, function (data) {
                 $('#alertsLogIn').empty();
-                if(data.responseJSON.code === 403){
-                    $( "#alertsLogIn" ).append( '<div class="alert alert-danger">Contraseña no válida.</div>');
-                } else if(data.responseJSON.code === 404){
-                    $( "#alertsLogIn" ).append( '<div class="alert alert-danger">El usuario no existe.</div>');
+                if (data.responseJSON.code === 403) {
+                    $("#alertsLogIn").append('<div class="alert alert-danger">Wrong password.</div>');
+                } else if (data.responseJSON.code === 404) {
+                    $("#alertsLogIn").append('<div class="alert alert-danger">User does not exist.</div>');
                 } else {
-                    $( "#alertsLogIn" ).append( '<div class="alert alert-danger">Error en el login. '+data.responseJSON.data.msg+'</div>');
+                    $("#alertsLogIn").append('<div class="alert alert-danger"><strong>An error has occurred.</strong> ' + data.responseJSON.data.msg + '</div>');
                 }
             }
         )
@@ -147,51 +156,66 @@
     }
 
     function logOut() {
-        document.getElementById('userInfo').empty();
+        $('#userInfo').empty();
         localStorage.removeItem('player');
     }
 
     function startMatching() {
         var player = localStorage.getItem('player');
-        if(player){
-            socket.emit('matching', {player:JSON.parse(player)});
+        if (player) {
+            socket.emit('matching', {player: JSON.parse(player)});
+            document.getElementById('matchButton').style.visibility = 'hidden';
+            document.getElementById('matchCancelButton').style.visibility = 'visible';
         } else {
-            $( '#alertsMatching' ).append( '<div class="alert alert-danger">El usuario no está logado.</div>');
+            $('#alertsMatching').append('<div class="alert alert-danger">There is not a user logged.</div>');
         }
     }
 
     function stopMatching() {
-        $( '#alertsMatching' ).empty();
-        localStorage.removeItem('match');
-        //TODO llamada api para borrarla
+        var match = localStorage.getItem('match');
+        socket.emit('cancelMatching',{match: {id: match}});
     }
 
     function load() {
-        if(localStorage.getItem('player')){
-            document.getElementById('userInfo').innerHTML=localStorage.getItem('player');
+        if (localStorage.getItem('player')) {
+            document.getElementById('userInfo').innerHTML = localStorage.getItem('player');
+            document.getElementById('logOutButton').style.visibility = "visible";
         }
 
-        socket = io('127.0.0.1:9000');
+        if (localStorage.getItem('match')){
+            stopMatching();
+        }
+
         socket.on('global', function (msg) {
             console.log("Mensaje Global", msg);
         });
 
         socket.on('matching', function (msg) {
-            $( '#alertsMatching' ).empty();
-            if(msg.code === 500){
-                $( '#alertsMatching' ).append( '<div class="alert alert-danger">Ha ocurrido un error al buscar partida</div>');
-            }else if(msg.code=== 200){
+            $('#alertsMatching').empty();
+            if (msg.code === 200) {
                 localStorage.setItem('match', JSON.stringify(msg.match));
-                $( '#alertsMatching' ).append( '<div class="alert alert-info">Esperando jugadores ...</div>');
+                $('#alertsMatching').append('<div class="alert alert-info">Searching ...</div>');
             } else {
-                console.log("MSG", msg);
+                $('#alertsMatching').append('<div class="alert alert-danger">An error has occurred.</div>');
             }
         });
 
         socket.on('matchready', function (msg) {
+            document.getElementById('matchCancelButton').style.visibility = 'hidden';
             $('#alertsMatching').empty();
-            $('#alertsMatching').append( '<div class="alert alert-success"><strong>Partida encontrada</strong><br><span>Match ID:'+msg.id+'<br>Players:'+msg.players+'</span></div>');
+            $('#alertsMatching').append('<div class="alert alert-success"><strong>Match Found</strong><br><span>Match ID:' + msg.id + '<br>Players:' + msg.players + '</span></div>');
         });
+
+        socket.on('cancelMatching', function (msg) {
+            $('#alertsMatching').empty();
+            if(msg.code === 200){
+                localStorage.removeItem('match');
+                document.getElementById('matchButton').style.visibility = 'visible';
+                document.getElementById('matchCancelButton').style.visibility = 'hidden';
+            } else {
+                $('#alertsMatching').append('<div class="alert alert-danger">An error has occurred.</div>');
+            }
+        })
 
     }
 
